@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    build: ./rabbitmq
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # AMQP protocol
+      - "15672:15672" # Management UI
+    networks:
+      - microservices-net
+
+  validador:
+    build: ./validador
+    container_name: validador
+    ports:
+      - "5001:5000"   # Cambiado de 5000:5000 a 5001:5000
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - rabbitmq
+    networks:
+      - microservices-net
+
+  inventario1:
+    build: ./inventario
+    container_name: inventario1
+    environment:
+      - INSTANCE_NUMBER=1
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - rabbitmq
+    networks:
+      - microservices-net
+
+  inventario2:
+    build: ./inventario
+    container_name: inventario2
+    environment:
+      - INSTANCE_NUMBER=2
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - rabbitmq
+    networks:
+      - microservices-net
+
+  inventario3:
+    build: ./inventario
+    container_name: inventario3
+    environment:
+      - INSTANCE_NUMBER=3
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - rabbitmq
+    networks:
+      - microservices-net
+
+networks:
+  microservices-net:
+    driver: bridge
