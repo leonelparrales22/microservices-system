@@ -128,29 +128,63 @@ def process_request():
         print(
             f"[VALIDADOR] Esperando {len(target_microservices)} respuestas para request {request_id}"
         )
+        from collections import Counter
+
+        def normalize_response(resp):
+            r = resp["response"].copy()
+            r.pop("microservice_id", None)
+            r["data"] = r.get("data", {}).copy()
+            r["data"].pop("instance", None)
+            r["data"].pop("timestamp", None)
+            return json.dumps(r, sort_keys=True)
+
+        # Espera dinámica: responde en cuanto haya dos respuestas iguales
         while time.time() - start_time < max_wait_time:
             with responses_lock:
-                current_responses = len(responses.get(request_id, []))
-            if current_responses >= len(target_microservices):
-                break
+                request_responses = responses.get(request_id, [])
+                normalized = [normalize_response(r) for r in request_responses]
+                counts = Counter(normalized)
+                most_common = counts.most_common(1)
+                if most_common and most_common[0][1] >= 2:
+                    idx = normalized.index(most_common[0][0])
+                    valid_response = request_responses[idx]
+                    # Limpiar respuestas procesadas
+                    if request_id in responses:
+                        del responses[request_id]
+                    final_wait_time = time.time() - start_time
+                    print(
+                        f"[VALIDADOR] Request {request_id} completado con consenso en {final_wait_time:.2f}s"
+                    )
+                    return jsonify(
+                        {
+                            "request_id": request_id,
+                            "response": valid_response["response"],
+                            "wait_time": f"{final_wait_time:.2f}s",
+                        }
+                    )
+                current_responses = len(request_responses)
+                if current_responses >= len(target_microservices):
+                    break
             time.sleep(wait_interval)
-        # Recuperar respuestas
+        # Si no hubo consenso, devolver error
         with responses_lock:
             request_responses = responses.get(request_id, [])
-            # Limpiar respuestas procesadas
             if request_id in responses:
                 del responses[request_id]
         final_wait_time = time.time() - start_time
         print(
-            f"[VALIDADOR] Request {request_id} completado con {len(request_responses)} respuestas en {final_wait_time:.2f}s"
+            f"[VALIDADOR] Request {request_id} completado sin consenso en {final_wait_time:.2f}s"
         )
-        return jsonify(
-            {
-                "request_id": request_id,
-                "target_microservices": target_microservices,
-                "responses": request_responses,
-                "wait_time": f"{final_wait_time:.2f}s",
-            }
+        return (
+            jsonify(
+                {
+                    "error": "No se obtuvo consenso entre los microservicios de inventario. Verifique el estado del sistema.",
+                    "request_id": request_id,
+                    "responses": request_responses,
+                    "wait_time": f"{final_wait_time:.2f}s",
+                }
+            ),
+            500,
         )
     except Exception as e:
         print(f"[VALIDADOR] ERROR en process_request: {e}")

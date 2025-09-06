@@ -4,10 +4,23 @@ import pika
 import time
 from flask import Flask
 
+
 app = Flask(__name__)
 
 # Obtener número de instancia
 instance_number = os.getenv("INSTANCE_NUMBER", "1")
+
+# Leer configuración para override_quantity
+import pathlib
+
+config_path = pathlib.Path(__file__).parent / "inventario_config.json"
+try:
+    with open(config_path, "r") as f:
+        config = json.load(f)
+    override_quantity = config.get("override_quantity", False)
+except Exception as e:
+    print(f"[INVENTARIO {instance_number}] [CONFIG] Error loading config: {e}")
+    override_quantity = False
 
 
 def get_rabbitmq_connection():
@@ -53,7 +66,31 @@ def process_requests():
             # Simular procesamiento
             processing_time = 1  # 1 segundo de procesamiento simulado
             time.sleep(processing_time)
-            # Generar respuesta (JSON simulado)
+            # Leer config en cada ciclo para asegurar que cada instancia la lea correctamente
+            import pathlib
+
+            config_path = pathlib.Path(__file__).parent / "inventario_config.json"
+            try:
+                with open(config_path, "r") as f:
+                    config = json.load(f)
+                override_quantity = config.get("override_quantity", False)
+            except Exception as e:
+                print(
+                    f"[INVENTARIO {instance_number}] [CONFIG] Error loading config: {e}"
+                )
+                override_quantity = False
+
+            quantity = 100
+            
+            try:
+                inst_num = int(instance_number)
+            except Exception:
+                inst_num = instance_number
+            if override_quantity and inst_num == 2:
+                quantity = 200
+            elif override_quantity and inst_num == 3:
+                quantity = 300
+                
             response = {
                 "microservice_id": int(instance_number),
                 "request_id": request_id,
@@ -62,7 +99,7 @@ def process_requests():
                 "data": {
                     "product_id": request_data.get("product_id", "unknown"),
                     "in_stock": True,
-                    "quantity": 100,
+                    "quantity": quantity,
                     "instance": instance_number,
                     "timestamp": time.time(),
                 },
