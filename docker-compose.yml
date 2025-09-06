@@ -3,8 +3,8 @@ services:
     build: ./rabbitmq
     container_name: rabbitmq
     ports:
-      - "5672:5672" # AMQP protocol
-      - "15672:15672" # Management UI
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - microservices-net
 
@@ -12,7 +12,7 @@ services:
     build: ./validador
     container_name: validador
     ports:
-      - "5001:5000" # Cambiado de 5000:5000 a 5001:5000
+      - "5001:5000"   # Validador
     environment:
       - RABBITMQ_HOST=rabbitmq
     depends_on:
@@ -23,9 +23,12 @@ services:
   inventario1:
     build: ./inventario
     container_name: inventario1
+    ports:
+      - "5002:5001"
     environment:
       - INSTANCE_NUMBER=1
       - RABBITMQ_HOST=rabbitmq
+      - PYTHONUNBUFFERED=1
     depends_on:
       - rabbitmq
     networks:
@@ -34,9 +37,12 @@ services:
   inventario2:
     build: ./inventario
     container_name: inventario2
+    ports:
+      - "5003:5002"
     environment:
       - INSTANCE_NUMBER=2
       - RABBITMQ_HOST=rabbitmq
+      - PYTHONUNBUFFERED=2
     depends_on:
       - rabbitmq
     networks:
@@ -45,9 +51,12 @@ services:
   inventario3:
     build: ./inventario
     container_name: inventario3
+    ports:
+      - "5004:5003"
     environment:
       - INSTANCE_NUMBER=3
       - RABBITMQ_HOST=rabbitmq
+      - PYTHONUNBUFFERED=3
     depends_on:
       - rabbitmq
     networks:
