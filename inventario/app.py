@@ -111,6 +111,7 @@ def process_requests():
 
                 db.close()
 
+            # Determinar override_quantity por probabilidad (70% false, 30% true)
             override_quantity = random.random() < 0.3     
 
             try:
