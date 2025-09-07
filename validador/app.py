@@ -226,8 +226,11 @@ def process_request():
                         }
                     )
 
+                current_responses = len(request_responses)
+                if current_responses >= len(target_microservices):
+                    break
             time.sleep(wait_interval)
-
+        # Si no hubo consenso, devolver error
         with responses_lock:
             request_responses = responses.get(request_id, [])
             if request_id in responses:
