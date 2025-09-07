@@ -3,7 +3,20 @@ import json
 import pika
 import time
 from flask import Flask
+import random
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from models import Base, Product
+
+# Conexión a SQLite (archivo dentro del contenedor)
+DATABASE_URL = os.getenv("DB_URL", "sqlite:///./inventario.db")
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+
+# Crear tablas si no existen
+Base.metadata.create_all(bind=engine)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app = Flask(__name__)
 
@@ -80,25 +93,48 @@ def process_requests():
                 )
                 override_quantity = False
 
-            quantity = 100
-            
+            # quantity = 100
+            # Abrir sesión de DB
+            db = SessionLocal()
+
+            product_id = request_data.get("product_id", "unknown")
+            product = db.query(Product).filter_by(product_id=product_id).first()
+
+            if product:
+                # Producto encontrado en BD
+                quantity = product.quantity
+                in_stock = product.in_stock
+            else:
+                # Si no existe, puedes decidir retornarlo con stock=0
+                quantity = 0
+                in_stock = False
+
+                db.close()
+
+            # Determinar override_quantity por probabilidad (70% false, 30% true)
+            override_quantity = random.random() < 0.3     
+
             try:
                 inst_num = int(instance_number)
             except Exception:
                 inst_num = instance_number
             if override_quantity and inst_num == 2:
-                quantity = 200
+                quantity = 500
             elif override_quantity and inst_num == 3:
                 quantity = 300
-                
+
+            print(
+                f"[INVENTARIO {instance_number}] [OVERRIDE] {override_quantity}"
+            )
+
             response = {
                 "microservice_id": int(instance_number),
                 "request_id": request_id,
                 "status": "processed",
                 "processing_time": processing_time,
                 "data": {
-                    "product_id": request_data.get("product_id", "unknown"),
-                    "in_stock": True,
+                    "product_id": product_id,
+                    "in_stock": in_stock,
                     "quantity": quantity,
                     "instance": instance_number,
                     "timestamp": time.time(),
