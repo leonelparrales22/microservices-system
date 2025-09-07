@@ -3,6 +3,7 @@ import json
 import pika
 import time
 from flask import Flask
+import random
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -110,14 +111,20 @@ def process_requests():
 
                 db.close()
 
+            override_quantity = random.random() < 0.3     
+
             try:
                 inst_num = int(instance_number)
             except Exception:
                 inst_num = instance_number
             if override_quantity and inst_num == 2:
-                quantity = 200
+                quantity = 500
             elif override_quantity and inst_num == 3:
                 quantity = 300
+
+            print(
+                f"[INVENTARIO {instance_number}] [OVERRIDE] {override_quantity}"
+            )
 
             response = {
                 "microservice_id": int(instance_number),
