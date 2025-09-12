@@ -62,6 +62,14 @@ services:
     networks:
       - microservices-net
 
+  todo-frontend:
+    build: ./todo-frontend
+    container_name: todo-frontend
+    ports:
+      - "3000:80"   # Todo Frontend
+    networks:
+      - microservices-net
+
   nginx:
     image: nginx:latest
     container_name: api-gateway
@@ -74,6 +82,7 @@ services:
       - inventario1
       - inventario2
       - inventario3
+      - todo-frontend
     networks:
       - microservices-net
 
