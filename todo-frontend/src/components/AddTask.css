@@ -1,0 +1,139 @@
+/* AddTask Component Styles */
+.add-task {
+  padding: 2rem;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.add-task-form {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.input-group {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.task-input {
+  flex: 1;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.task-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.task-input.invalid {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+}
+
+.task-input::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+.add-btn {
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+  white-space: nowrap;
+}
+
+.add-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(79, 172, 254, 0.4);
+}
+
+.add-btn:active {
+  transform: translateY(0);
+}
+
+.add-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.error-message {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(255, 107, 107, 0.1);
+  border-radius: 4px;
+  border-left: 4px solid #ff6b6b;
+}
+
+.input-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.char-count {
+  opacity: 0.7;
+}
+
+.keyboard-hint {
+  font-style: italic;
+  opacity: 0.6;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .add-task {
+    padding: 1.5rem 1rem;
+  }
+  
+  .input-group {
+    flex-direction: column;
+  }
+  
+  .add-btn {
+    width: 100%;
+    padding: 1.25rem;
+  }
+  
+  .input-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .add-task {
+    padding: 1rem;
+  }
+  
+  .task-input {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+  
+  .add-btn {
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+}
