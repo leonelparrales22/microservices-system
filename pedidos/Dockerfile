@@ -7,7 +7,7 @@ RUN pip install -r requirements.txt
 
 # Copiar aplicación y configuración
 COPY app.py .
-COPY ordenes_config.json .
+COPY pedidos_config.json .
 
 # Copiar script de inicialización de la BD
 COPY models.py .

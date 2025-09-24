@@ -345,7 +345,7 @@ def process_request():
         return (
             jsonify(
                 {
-                    "error": "No se obtuvo consenso entre los microservicios de ordenes. Verifique el estado del sistema.",
+                    "error": "No se obtuvo consenso entre los microservicios de pedidos. Verifique el estado del sistema.",
                     "request_id": request_id,
                     "responses": request_responses,
                     "failed_microservices": failed_microservices,

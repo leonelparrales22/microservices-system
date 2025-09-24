@@ -1,11 +1,11 @@
 # Sistema de Microservicios con RabbitMQ
 
-Este sistema implementa un validador que distribuye solicitudes a múltiples microservicios de ordenes usando Ngnix como enrutador de peticiones y RabbitMQ como mensajería asíncrona.
+Este sistema implementa un validador que distribuye solicitudes a múltiples microservicios de pedidos usando Ngnix como enrutador de peticiones y RabbitMQ como mensajería asíncrona.
 
 ## Estructura
 
 - **Validador**: Recibe solicitudes HTTP y las envía a los microservicios apropiados
-- **Ordenes (3 instancias)**: Procesan solicitudes y devuelven respuestas JSON
+- **Pedidos (3 instancias)**: Procesan solicitudes y devuelven respuestas JSON
 - **RabbitMQ**: Servidor de mensajería que coordina la comunicación
 - **Nginx**: API Gateway para enrutamiento de solitudes entre clinte-servidor.
 
@@ -32,7 +32,7 @@ Validador: GET http://localhost:5001/health
 ### Gateway
 
 ```bash
-curl -X POST http://localhost:8080/consulta-ordenes \
+curl -X POST http://localhost:8080/consulta-pedidos \
   -H "Content-Type: application/json" \
   -d '{"product_id": "12345", "action": "check_inventory"}'
 
