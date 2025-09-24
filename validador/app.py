@@ -265,6 +265,10 @@ def process_request():
             r["data"] = r.get("data", {}).copy()
             r["data"].pop("instance", None)
             r["data"].pop("timestamp", None)
+            r["data"].pop("order_id", None)
+            r["data"].pop("customer_id", None)
+            r["data"].pop("order_date", None)
+            r["data"].pop("estimated_delivery", None)
             return json.dumps(r, sort_keys=True)
 
         while time.time() - start_time < max_wait_time:

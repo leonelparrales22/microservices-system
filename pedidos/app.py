@@ -138,9 +138,15 @@ def process_requests():
                 "status": "processed",
                 "processing_time": processing_time,
                 "data": {
+                    "order_id": f"ORD-{request_id}-{instance_number}",
+                    "customer_id": f"CUST-{random.randint(1000, 9999)}",
                     "product_id": product_id,
-                    "in_stock": in_stock,
-                    "quantity": quantity,
+                    "order_status": "confirmed" if in_stock else "pending",
+                    "total_items": quantity,
+                    "order_date": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                    "estimated_delivery": time.strftime(
+                        "%Y-%m-%d", time.localtime(time.time() + 86400)
+                    ),  # +1 día
                     "instance": instance_number,
                     "timestamp": time.time(),
                 },
@@ -246,6 +252,26 @@ if __name__ == "__main__":
             "service": "pedidos",
             "timestamp": time.time(),
         }
+
+    @app.route("/orders")
+    def get_orders():
+        db = SessionLocal()
+        try:
+            orders = db.query(Order).all()
+            orders_list = [
+                {
+                    "id": order.id,
+                    "order_id": order.order_id,
+                    "product_id": order.product_id,
+                    "quantity_ordered": order.quantity_ordered,
+                    "status": order.status,
+                    "timestamp": order.timestamp.isoformat() if order.timestamp else None,
+                }
+                for order in orders
+            ]
+            return {"orders": orders_list}
+        finally:
+            db.close()
 
     port = 5000 + int(instance_number)
     app.run(host="0.0.0.0", port=port, debug=False)
