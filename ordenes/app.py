@@ -7,7 +7,7 @@ import random
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Base, Product
+from models import Base, Product, Order
 
 # Conexión a SQLite (archivo dentro del contenedor)
 DATABASE_URL = os.getenv("DB_URL", "sqlite:///./ordenes.db")
@@ -107,8 +107,6 @@ def process_requests():
                 quantity = 0
                 in_stock = False
 
-                db.close()
-
             # Determinar override_quantity por probabilidad (70% false, 30% true)
             override_quantity = random.random() < 0.3
 
@@ -122,6 +120,12 @@ def process_requests():
                 quantity = 300
 
             print(f"[ORDENES {instance_number}] [OVERRIDE] {override_quantity}")
+
+            # Insertar orden en BD
+            new_order = Order(order_id=request_id, product_id=product_id, quantity_ordered=quantity, status="processed")
+            db.add(new_order)
+            db.commit()
+            db.close()
 
             response = {
                 "microservice_id": int(instance_number),
