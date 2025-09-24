@@ -265,7 +265,9 @@ if __name__ == "__main__":
                     "product_id": order.product_id,
                     "quantity_ordered": order.quantity_ordered,
                     "status": order.status,
-                    "timestamp": order.timestamp.isoformat() if order.timestamp else None,
+                    "timestamp": (
+                        order.timestamp.isoformat() if order.timestamp else None
+                    ),
                 }
                 for order in orders
             ]
