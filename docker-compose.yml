@@ -12,7 +12,7 @@ services:
     build: ./validador
     container_name: validador
     ports:
-      - "5001:5000"   # Validador
+      - "5001:5000" # Validador
     environment:
       - RABBITMQ_HOST=rabbitmq
     depends_on:
@@ -20,9 +20,9 @@ services:
     networks:
       - microservices-net
 
-  inventario1:
-    build: ./inventario
-    container_name: inventario1
+  ordenes1:
+    build: ./ordenes
+    container_name: ordenes1
     ports:
       - "5002:5001"
     environment:
@@ -34,9 +34,9 @@ services:
     networks:
       - microservices-net
 
-  inventario2:
-    build: ./inventario
-    container_name: inventario2
+  ordenes2:
+    build: ./ordenes
+    container_name: ordenes2
     ports:
       - "5003:5002"
     environment:
@@ -48,9 +48,9 @@ services:
     networks:
       - microservices-net
 
-  inventario3:
-    build: ./inventario
-    container_name: inventario3
+  ordenes3:
+    build: ./ordenes
+    container_name: ordenes3
     ports:
       - "5004:5003"
     environment:
@@ -71,9 +71,9 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - validador
-      - inventario1
-      - inventario2
-      - inventario3
+      - ordenes1
+      - ordenes2
+      - ordenes3
     networks:
       - microservices-net
 

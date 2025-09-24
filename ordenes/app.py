@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from models import Base, Product
 
 # Conexión a SQLite (archivo dentro del contenedor)
-DATABASE_URL = os.getenv("DB_URL", "sqlite:///./inventario.db")
+DATABASE_URL = os.getenv("DB_URL", "sqlite:///./ordenes.db")
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
 # Crear tablas si no existen
@@ -26,13 +26,13 @@ instance_number = os.getenv("INSTANCE_NUMBER", "1")
 # Leer configuración para override_quantity
 import pathlib
 
-config_path = pathlib.Path(__file__).parent / "inventario_config.json"
+config_path = pathlib.Path(__file__).parent / "ordenes_config.json"
 try:
     with open(config_path, "r") as f:
         config = json.load(f)
     override_quantity = config.get("override_quantity", False)
 except Exception as e:
-    print(f"[INVENTARIO {instance_number}] [CONFIG] Error loading config: {e}")
+    print(f"[ORDENES {instance_number}] [CONFIG] Error loading config: {e}")
     override_quantity = False
 
 
@@ -65,16 +65,16 @@ def process_requests():
 
     def callback(ch, method, properties, body):
         try:
-            print(f"[INVENTARIO {instance_number}] [RECEIVED] Raw message: {body}")
+            print(f"[ORDENES {instance_number}] [RECEIVED] Raw message: {body}")
             print(
-                f"[INVENTARIO {instance_number}] [PROPERTIES] Content-Type: {getattr(properties, 'content_type', None)} Headers: {getattr(properties, 'headers', None)}"
+                f"[ORDENES {instance_number}] [PROPERTIES] Content-Type: {getattr(properties, 'content_type', None)} Headers: {getattr(properties, 'headers', None)}"
             )
             data = json.loads(body)
             request_id = data.get("request_id")
             request_data = data.get("data")
             response_routing_key = data.get("response_routing_key")
             print(
-                f"[INVENTARIO {instance_number}] [PROCESSING] Request ID: {request_id}, Data: {request_data}, Routing Key: {response_routing_key}"
+                f"[ORDENES {instance_number}] [PROCESSING] Request ID: {request_id}, Data: {request_data}, Routing Key: {response_routing_key}"
             )
             # Simular procesamiento
             processing_time = 1  # 1 segundo de procesamiento simulado
@@ -88,9 +88,7 @@ def process_requests():
                     config = json.load(f)
                 override_quantity = config.get("override_quantity", False)
             except Exception as e:
-                print(
-                    f"[INVENTARIO {instance_number}] [CONFIG] Error loading config: {e}"
-                )
+                print(f"[ORDENES {instance_number}] [CONFIG] Error loading config: {e}")
                 override_quantity = False
 
             # quantity = 100
@@ -112,7 +110,7 @@ def process_requests():
                 db.close()
 
             # Determinar override_quantity por probabilidad (70% false, 30% true)
-            override_quantity = random.random() < 0.3     
+            override_quantity = random.random() < 0.3
 
             try:
                 inst_num = int(instance_number)
@@ -123,9 +121,7 @@ def process_requests():
             elif override_quantity and inst_num == 3:
                 quantity = 300
 
-            print(
-                f"[INVENTARIO {instance_number}] [OVERRIDE] {override_quantity}"
-            )
+            print(f"[ORDENES {instance_number}] [OVERRIDE] {override_quantity}")
 
             response = {
                 "microservice_id": int(instance_number),
@@ -140,23 +136,21 @@ def process_requests():
                     "timestamp": time.time(),
                 },
             }
-            print(
-                f"[INVENTARIO {instance_number}] [RESPONSE] Ready to send: {response}"
-            )
+            print(f"[ORDENES {instance_number}] [RESPONSE] Ready to send: {response}")
             # Enviar respuesta
             send_response(response_routing_key, response)
             ch.basic_ack(delivery_tag=method.delivery_tag)
             print(
-                f"[INVENTARIO {instance_number}] [COMPLETE] Request {request_id} processed and acknowledged."
+                f"[ORDENES {instance_number}] [COMPLETE] Request {request_id} processed and acknowledged."
             )
         except json.JSONDecodeError as e:
             print(
-                f"[INVENTARIO {instance_number}] [ERROR] JSON decode error: {e} | Body: {body}"
+                f"[ORDENES {instance_number}] [ERROR] JSON decode error: {e} | Body: {body}"
             )
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         except Exception as e:
             print(
-                f"[INVENTARIO {instance_number}] [ERROR] Exception processing request: {e}"
+                f"[ORDENES {instance_number}] [ERROR] Exception processing request: {e}"
             )
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
@@ -194,7 +188,7 @@ def send_response(routing_key, response_data):
     """Enviar respuesta a través de RabbitMQ"""
     try:
         print(
-            f"[INVENTARIO {instance_number}] [SEND_RESPONSE] Connecting to RabbitMQ to send response..."
+            f"[ORDENES {instance_number}] [SEND_RESPONSE] Connecting to RabbitMQ to send response..."
         )
         connection = get_rabbitmq_connection()
         channel = connection.channel()
@@ -209,7 +203,7 @@ def send_response(routing_key, response_data):
             "response": response_data,  # Enviar todo el objeto de respuesta
         }
         print(
-            f"[INVENTARIO {instance_number}] [SEND_RESPONSE] Publishing to exchange 'responses' with routing_key '{routing_key}': {message}"
+            f"[ORDENES {instance_number}] [SEND_RESPONSE] Publishing to exchange 'responses' with routing_key '{routing_key}': {message}"
         )
         channel.basic_publish(
             exchange="responses",
@@ -220,11 +214,11 @@ def send_response(routing_key, response_data):
             ),
         )
         print(
-            f"[INVENTARIO {instance_number}] [SEND_RESPONSE] Response sent and connection closed."
+            f"[ORDENES {instance_number}] [SEND_RESPONSE] Response sent and connection closed."
         )
         connection.close()
     except Exception as e:
-        print(f"[INVENTARIO {instance_number}] [ERROR] Error sending response: {e}")
+        print(f"[ORDENES {instance_number}] [ERROR] Error sending response: {e}")
 
 
 if __name__ == "__main__":
@@ -240,7 +234,7 @@ if __name__ == "__main__":
         return {
             "status": "healthy",
             "instance": instance_number,
-            "service": "inventario",
+            "service": "ordenes",
             "timestamp": time.time(),
         }
 

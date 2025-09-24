@@ -28,19 +28,29 @@ metrics_lock = threading.Lock()
 if not os.path.exists(METRICS_FILE):
     with open(METRICS_FILE, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow([
-            "timestamp",
-            "event",
-            "request_id",
-            "status",
-            "extra_info",
-            "microservice_id",
-            "failed_microservices",
-            "proc_id",
-            "thread_id",
-        ])
+        writer.writerow(
+            [
+                "timestamp",
+                "event",
+                "request_id",
+                "status",
+                "extra_info",
+                "microservice_id",
+                "failed_microservices",
+                "proc_id",
+                "thread_id",
+            ]
+        )
 
-def log_metric(event, request_id=None, status="", extra_info="", microservice_id="-", failed_microservices=None):
+
+def log_metric(
+    event,
+    request_id=None,
+    status="",
+    extra_info="",
+    microservice_id="-",
+    failed_microservices=None,
+):
     proc_id = os.getpid()
     thread_id = threading.get_ident()
 
@@ -63,17 +73,20 @@ def log_metric(event, request_id=None, status="", extra_info="", microservice_id
     with metrics_lock:
         with open(METRICS_FILE, "a", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow([
-                time.time(),
-                event,
-                request_id or "-",
-                status,
-                extra_info,
-                microservice_id,
-                failed_str,
-                proc_id,
-                thread_id,
-            ])
+            writer.writerow(
+                [
+                    time.time(),
+                    event,
+                    request_id or "-",
+                    status,
+                    extra_info,
+                    microservice_id,
+                    failed_str,
+                    proc_id,
+                    thread_id,
+                ]
+            )
+
 
 def get_rabbitmq_connection():
     max_retries = 5
@@ -85,7 +98,12 @@ def get_rabbitmq_connection():
                     host="rabbitmq", connection_attempts=5, retry_delay=3
                 )
             )
-            log_metric("rabbitmq_connect", status="success", microservice_id="-", failed_microservices=[])
+            log_metric(
+                "rabbitmq_connect",
+                status="success",
+                microservice_id="-",
+                failed_microservices=[],
+            )
             return connection
         except Exception as e:
             log_metric(
@@ -93,12 +111,13 @@ def get_rabbitmq_connection():
                 status="failed",
                 extra_info=f"attempt {attempt+1}/{max_retries}: {e}",
                 microservice_id="-",
-                failed_microservices=[]
+                failed_microservices=[],
             )
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
             else:
                 raise
+
 
 def setup_rabbitmq_consumer():
     def callback(ch, method, properties, body):
@@ -125,7 +144,7 @@ def setup_rabbitmq_consumer():
                     status="received",
                     extra_info=response_data,
                     microservice_id=microservice_id,
-                    failed_microservices=[]
+                    failed_microservices=[],
                 )
 
                 # Registro de que se almacenó y la latencia
@@ -135,33 +154,66 @@ def setup_rabbitmq_consumer():
                     status="stored",
                     extra_info=(
                         f"from microservice {microservice_id}, total {len(responses[request_id])}, latency={latency:.3f}s"
-                        if latency else f"from microservice {microservice_id}, total {len(responses[request_id])}"
+                        if latency
+                        else f"from microservice {microservice_id}, total {len(responses[request_id])}"
                     ),
                     microservice_id=microservice_id,
-                    failed_microservices=[]
+                    failed_microservices=[],
                 )
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
         except json.JSONDecodeError as e:
-            log_metric("response_error", status="json_decode_error", extra_info=str(e), microservice_id="-", failed_microservices=[])
+            log_metric(
+                "response_error",
+                status="json_decode_error",
+                extra_info=str(e),
+                microservice_id="-",
+                failed_microservices=[],
+            )
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         except Exception as e:
-            log_metric("response_error", status="processing_error", extra_info=str(e), microservice_id="-", failed_microservices=[])
+            log_metric(
+                "response_error",
+                status="processing_error",
+                extra_info=str(e),
+                microservice_id="-",
+                failed_microservices=[],
+            )
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
     while True:
         try:
             connection = get_rabbitmq_connection()
             channel = connection.channel()
-            channel.exchange_declare(exchange="responses", exchange_type="direct", durable=True)
+            channel.exchange_declare(
+                exchange="responses", exchange_type="direct", durable=True
+            )
             channel.queue_declare(queue="validador_responses", durable=True)
-            channel.queue_bind(exchange="responses", queue="validador_responses", routing_key="validador")
-            channel.basic_consume(queue="validador_responses", on_message_callback=callback)
-            log_metric("consumer_ready", status="waiting_for_responses", microservice_id="-", failed_microservices=[])
+            channel.queue_bind(
+                exchange="responses",
+                queue="validador_responses",
+                routing_key="validador",
+            )
+            channel.basic_consume(
+                queue="validador_responses", on_message_callback=callback
+            )
+            log_metric(
+                "consumer_ready",
+                status="waiting_for_responses",
+                microservice_id="-",
+                failed_microservices=[],
+            )
             channel.start_consuming()
         except Exception as e:
-            log_metric("consumer_error", status="connection_failed", extra_info=str(e), microservice_id="-", failed_microservices=[])
+            log_metric(
+                "consumer_error",
+                status="connection_failed",
+                extra_info=str(e),
+                microservice_id="-",
+                failed_microservices=[],
+            )
             time.sleep(5)
+
 
 @app.route("/process", methods=["POST"])
 def process_request():
@@ -170,13 +222,25 @@ def process_request():
     try:
         data = request.get_json()
         if not data:
-            log_metric("process_request", status="failed", extra_info="No JSON data provided", microservice_id="-", failed_microservices=[])
+            log_metric(
+                "process_request",
+                status="failed",
+                extra_info="No JSON data provided",
+                microservice_id="-",
+                failed_microservices=[],
+            )
             return jsonify({"error": "No JSON data provided"}), 400
 
         current_request_id += 1
         request_id = str(current_request_id)
         request_start_times[request_id] = time.time()
-        log_metric("request_start", request_id=request_id, status="received", microservice_id="-", failed_microservices=[])
+        log_metric(
+            "request_start",
+            request_id=request_id,
+            status="received",
+            microservice_id="-",
+            failed_microservices=[],
+        )
 
         target_microservices = determine_target_microservices(data)
         send_to_rabbitmq(request_id, target_microservices, data)
@@ -186,8 +250,14 @@ def process_request():
         wait_interval = 0.1
         start_time = time.time()
 
-        log_metric("process_request", request_id=request_id, status="waiting_responses",
-                   extra_info=f"expecting {len(target_microservices)}", microservice_id="-", failed_microservices=[])
+        log_metric(
+            "process_request",
+            request_id=request_id,
+            status="waiting_responses",
+            extra_info=f"expecting {len(target_microservices)}",
+            microservice_id="-",
+            failed_microservices=[],
+        )
 
         def normalize_response(resp):
             r = resp["response"].copy()
@@ -213,15 +283,31 @@ def process_request():
 
                     final_wait_time = time.time() - start_time
 
-                    log_metric("vote_result", request_id=request_id, status="consensus_reached",
-                               extra_info=valid_response["response"], microservice_id="-", failed_microservices=[])
+                    log_metric(
+                        "vote_result",
+                        request_id=request_id,
+                        status="consensus_reached",
+                        extra_info=valid_response["response"],
+                        microservice_id="-",
+                        failed_microservices=[],
+                    )
 
-                    log_metric("latency_summary", request_id=request_id, status="success",
-                               extra_info=f"responses={len(request_responses)}, total_time={final_wait_time:.2f}s",
-                               microservice_id="-", failed_microservices=[])
+                    log_metric(
+                        "latency_summary",
+                        request_id=request_id,
+                        status="success",
+                        extra_info=f"responses={len(request_responses)}, total_time={final_wait_time:.2f}s",
+                        microservice_id="-",
+                        failed_microservices=[],
+                    )
 
-                    return jsonify({"request_id": request_id, "response": valid_response["response"],
-                                    "wait_time": f"{final_wait_time:.2f}s"})
+                    return jsonify(
+                        {
+                            "request_id": request_id,
+                            "response": valid_response["response"],
+                            "wait_time": f"{final_wait_time:.2f}s",
+                        }
+                    )
 
                 if len(request_responses) >= len(target_microservices):
                     break
@@ -238,29 +324,57 @@ def process_request():
         responded_services = set(r["microservice_id"] for r in request_responses)
         failed_microservices = list(all_microservices - responded_services)
 
-        log_metric("vote_result", request_id=request_id, status="no_consensus",
-                   extra_info="No consensus reached", microservice_id="-", failed_microservices=failed_microservices)
+        log_metric(
+            "vote_result",
+            request_id=request_id,
+            status="no_consensus",
+            extra_info="No consensus reached",
+            microservice_id="-",
+            failed_microservices=failed_microservices,
+        )
 
-        log_metric("latency_summary", request_id=request_id, status="failed",
-                   extra_info=f"responses={len(request_responses)}, total_time={final_wait_time:.2f}s",
-                   microservice_id="-", failed_microservices=[])
+        log_metric(
+            "latency_summary",
+            request_id=request_id,
+            status="failed",
+            extra_info=f"responses={len(request_responses)}, total_time={final_wait_time:.2f}s",
+            microservice_id="-",
+            failed_microservices=[],
+        )
 
-        return jsonify({
-            "error": "No se obtuvo consenso entre los microservicios de inventario.",
-            "request_id": request_id,
-            "responses": request_responses,
-            "failed_microservices": failed_microservices,
-            "wait_time": f"{final_wait_time:.2f}s"
-        }), 500
+        return (
+            jsonify(
+                {
+                    "error": "No se obtuvo consenso entre los microservicios de ordenes. Verifique el estado del sistema.",
+                    "request_id": request_id,
+                    "responses": request_responses,
+                    "failed_microservices": failed_microservices,
+                    "wait_time": f"{final_wait_time:.2f}s",
+                }
+            ),
+            500,
+        )
 
     except Exception as e:
-        log_metric("process_request", status="error", extra_info=str(e), microservice_id="-", failed_microservices=[])
+        log_metric(
+            "process_request",
+            status="error",
+            extra_info=str(e),
+            microservice_id="-",
+            failed_microservices=[],
+        )
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/health", methods=["GET"])
 def health_check():
-    log_metric("health_check", status="ok", microservice_id="-", failed_microservices=[])
-    return jsonify({"status": "healthy", "service": "validador", "timestamp": time.time()})
+    log_metric(
+        "health_check", status="ok", microservice_id="-", failed_microservices=[]
+    )
+    return jsonify(
+        {"status": "healthy", "service": "validador", "timestamp": time.time()}
+    )
+
 
 def determine_target_microservices(data):
     if "product_id" in data:
@@ -270,11 +384,14 @@ def determine_target_microservices(data):
     else:
         return [1]
 
+
 def send_to_rabbitmq(request_id, target_microservices, data):
     try:
         connection = get_rabbitmq_connection()
         channel = connection.channel()
-        channel.exchange_declare(exchange="requests", exchange_type="direct", durable=True)
+        channel.exchange_declare(
+            exchange="requests", exchange_type="direct", durable=True
+        )
 
         for microservice_id in target_microservices:
             send_time = time.time()
@@ -287,19 +404,40 @@ def send_to_rabbitmq(request_id, target_microservices, data):
                 exchange="requests",
                 routing_key=f"microservice_{microservice_id}",
                 body=json.dumps(message),
-                properties=pika.BasicProperties(delivery_mode=2, content_type="application/json"),
+                properties=pika.BasicProperties(
+                    delivery_mode=2, content_type="application/json"
+                ),
             )
-            log_metric("send_to_rabbitmq", request_id=request_id, status="sent",
-                       extra_info=f"to microservice {microservice_id}, send_time={send_time}",
-                       microservice_id=microservice_id, failed_microservices=[])
+            log_metric(
+                "send_to_rabbitmq",
+                request_id=request_id,
+                status="sent",
+                extra_info=f"to microservice {microservice_id}, send_time={send_time}",
+                microservice_id=microservice_id,
+                failed_microservices=[],
+            )
 
-        log_metric("send_batch_complete", request_id=request_id, status="done",
-                   extra_info=f"sent {len(target_microservices)} messages", microservice_id="-", failed_microservices=[])
+        log_metric(
+            "send_batch_complete",
+            request_id=request_id,
+            status="done",
+            extra_info=f"sent {len(target_microservices)} messages",
+            microservice_id="-",
+            failed_microservices=[],
+        )
 
         connection.close()
     except Exception as e:
-        log_metric("send_to_rabbitmq", request_id=request_id, status="error", extra_info=str(e), microservice_id="-", failed_microservices=[])
+        log_metric(
+            "send_to_rabbitmq",
+            request_id=request_id,
+            status="error",
+            extra_info=str(e),
+            microservice_id="-",
+            failed_microservices=[],
+        )
         raise
+
 
 if __name__ == "__main__":
     rabbitmq_thread = threading.Thread(target=setup_rabbitmq_consumer, daemon=True)
