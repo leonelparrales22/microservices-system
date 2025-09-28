@@ -11,7 +11,7 @@ from functools import wraps
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import Base, Product, Order
-
+import uuid
 # ======================
 # MÉTRICAS EN CSV
 # ======================
@@ -19,15 +19,23 @@ import csv
 import datetime
 
 METRICS_FILE = "metrics_log.csv"
+REQUEST_COUNTER = 0  # contador global incremental
+
+def get_request_id():
+    """Genera un request_id único si aún no existe en g"""
+    if not hasattr(g, "request_id"):
+        g.request_id = str(uuid.uuid4())  # UUID único
+    return g.request_id
 
 def log_metric(event_type, user=None, status="success", details=""):
-    """Registrar métrica en CSV"""
+    """Registrar métrica en CSV con request_id persistente"""
     file_exists = os.path.isfile(METRICS_FILE)
     with open(METRICS_FILE, mode="a", newline="") as f:
         writer = csv.writer(f)
         if not file_exists:
-            writer.writerow(["timestamp", "event_type", "user", "status", "details"])
+            writer.writerow(["request_id", "timestamp", "event_type", "user", "status", "details"])
         writer.writerow([
+            get_request_id(),  # siempre el mismo para la request completa
             datetime.datetime.utcnow().isoformat(),
             event_type,
             user if user else "",
