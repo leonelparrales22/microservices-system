@@ -2,7 +2,6 @@ import pandas as pd
 import plotly.express as px
 from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
-from typing import Tuple
 
 # -----------------------------
 # 1. Configuración de archivos
@@ -14,17 +13,17 @@ OUTPUT_HTML = Path('metrics_seg_report.html')
 # 2. Funciones auxiliares
 # -----------------------------
 def load_data(csv_path: Path) -> pd.DataFrame:
-    """Carga el CSV y agrega columna request_int."""
+    """Carga el CSV y agrega columna request_int para mostrar enteros en la tabla."""
     df = pd.read_csv(csv_path, parse_dates=['timestamp'])
     df['request_int'] = pd.factorize(df['request_id'])[0] + 1
     return df
 
 def compute_metrics(df: pd.DataFrame) -> dict:
-    """Calcula métricas principales."""
+    """Calcula métricas principales usando IDs únicos para total, exitosos y fallidos."""
     metrics = {
-        'total_requests': len(df),
-        'successful_requests': (df['status'] == 'success').sum(),
-        'failed_requests': (df['status'] == 'failed').sum(),
+        'total_requests': df['request_id'].nunique(),
+        'successful_requests': df[df['status'] == 'success']['request_id'].nunique(),
+        'failed_requests': df[df['status'] == 'failed']['request_id'].nunique(),
         'events_count': df['event_type'].value_counts(),
         'users_count': df['user'].value_counts()
     }
@@ -61,7 +60,7 @@ def render_html(metrics: dict, events_html: str, users_html: str, table_html: st
         </style>
     </head>
     <body>
-        <h1>Informe Enriquecido de Metrics Log</h1>
+        <h1>Informe tacticas de seguridad</h1>
 
         <div class="metrics">
             <div class="metric">
@@ -115,12 +114,8 @@ def main():
 
     # Tabla detallada
     df_display = df.copy()
-
-    # Eliminar UUID original
-    df_display = df_display.drop(columns=['request_id'])
-
-    # Renombrar request_int a request_id y moverlo al inicio
-    df_display = df_display.rename(columns={'request_int': 'request_id'})
+    df_display = df_display.drop(columns=['request_id'])  # eliminar UUID original
+    df_display = df_display.rename(columns={'request_int': 'request_id'})  # renombrar a request_id
     cols = ['request_id'] + [c for c in df_display.columns if c != 'request_id']
     df_display = df_display[cols]
 
