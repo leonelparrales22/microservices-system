@@ -2,13 +2,47 @@ import os
 import json
 import pika
 import time
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, g
 import random
 import requests
+import jwt
+from functools import wraps
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import Base, Product, Order
+
+# 🔐 Seguridad
+SECRET_KEY = os.getenv("SECRET_KEY", "mysecretkey")
+JWT_ALGORITHM = "HS256"
+
+
+def jwt_required(f):
+    """Decorator simple para validar token y exponer claims en flask.g"""
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        auth = request.headers.get("Authorization", None)
+        if not auth:
+            return jsonify({"error": "authorization required"}), 401
+        parts = auth.split()
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            return jsonify({"error": "invalid authorization header"}), 401
+        token = parts[1]
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            # Exponemos claims en flask.g
+            g.current_user = payload.get("sub")
+            g.current_org = payload.get("org")
+            g.current_roles = payload.get("roles", [])
+            return f(*args, **kwargs)
+        except jwt.ExpiredSignatureError:
+            return jsonify({"error": "token expired"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "invalid token"}), 401
+
+    return wrapper
+
 
 # Conexión a SQLite (archivo dentro del contenedor)
 DATABASE_URL = os.getenv("DB_URL", "sqlite:///./pedidos.db")
@@ -277,6 +311,7 @@ if __name__ == "__main__":
             db.close()
 
     @app.route("/create_order", methods=["POST"])
+    @jwt_required
     def create_order():
         token = request.headers.get("Authorization")
         if not token:
@@ -332,6 +367,7 @@ if __name__ == "__main__":
             db.close()
 
     @app.route("/history", methods=["GET"])
+    @jwt_required
     def history():
         token = request.headers.get("Authorization")
         if not token:
