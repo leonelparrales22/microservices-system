@@ -1,0 +1,248 @@
+{
+	"info": {
+		"_postman_id": "f0479e67-274b-4f62-bf6d-12e6fd1b27fc",
+		"name": "Arquitectura_Calidad_Seguridad",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "10184030",
+		"_collection_link": "https://gold-resonance-233168.postman.co/workspace/prueba~3646c51f-3405-4797-940c-c679a740057c/collection/10184030-f0479e67-274b-4f62-bf6d-12e6fd1b27fc?action=share&source=collection_link&creator=10184030"
+	},
+	"item": [
+		{
+			"name": "Registrarse",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"username\": \"leonelparrales22\",\r\n  \"password\": \"admin\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/auth/register",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"auth",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Crear Orden",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Pre-request Script\r",
+							"const loginUrl = 'http://localhost:8080/auth/login'; // Ajusta esta URL según tu endpoint de login\r",
+							"const credentials = {\r",
+							"    \"username\": \"leonelparrales22\",\r",
+							"    \"password\": \"admin\"\r",
+							"};\r",
+							"\r",
+							"// Función para obtener el token\r",
+							"const getToken = async () => {\r",
+							"    try {\r",
+							"        const response = await pm.sendRequest({\r",
+							"            url: loginUrl,\r",
+							"            method: 'POST',\r",
+							"            header: {\r",
+							"                'Content-Type': 'application/json'\r",
+							"            },\r",
+							"            body: {\r",
+							"                mode: 'raw',\r",
+							"                raw: JSON.stringify(credentials)\r",
+							"            }\r",
+							"        });\r",
+							"\r",
+							"        if (response.code === 200) {\r",
+							"            const responseData = response.json();\r",
+							"            return responseData.token;\r",
+							"        } else {\r",
+							"            console.log('Error en login:', response.code, response.status);\r",
+							"            return null;\r",
+							"        }\r",
+							"    } catch (error) {\r",
+							"        console.log('Error:', error);\r",
+							"        return null;\r",
+							"    }\r",
+							"};\r",
+							"\r",
+							"// Ejecutar y setear el token\r",
+							"getToken().then(token => {\r",
+							"    if (token) {\r",
+							"        pm.request.headers.upsert({\r",
+							"            key: 'Authorization',\r",
+							"            value: `Bearer ${token}`\r",
+							"        });\r",
+							"        console.log('Token set successfully');\r",
+							"    } else {\r",
+							"        console.log('Failed to get token');\r",
+							"    }\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"product_id\": \"P002\",\r\n  \"quantity\": 100\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/pedidos/create_order",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"pedidos",
+						"create_order"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"username\": \"leonelparrales22\",\r\n  \"password\": \"admin\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/auth/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"auth",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Consular Historial",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Pre-request Script\r",
+							"const loginUrl = 'http://localhost:8080/auth/login'; // Ajusta esta URL según tu endpoint de login\r",
+							"const credentials = {\r",
+							"    \"username\": \"leonelparrales22\",\r",
+							"    \"password\": \"admin\"\r",
+							"};\r",
+							"\r",
+							"// Función para obtener el token\r",
+							"const getToken = async () => {\r",
+							"    try {\r",
+							"        const response = await pm.sendRequest({\r",
+							"            url: loginUrl,\r",
+							"            method: 'POST',\r",
+							"            header: {\r",
+							"                'Content-Type': 'application/json'\r",
+							"            },\r",
+							"            body: {\r",
+							"                mode: 'raw',\r",
+							"                raw: JSON.stringify(credentials)\r",
+							"            }\r",
+							"        });\r",
+							"\r",
+							"        if (response.code === 200) {\r",
+							"            const responseData = response.json();\r",
+							"            return responseData.token;\r",
+							"        } else {\r",
+							"            console.log('Error en login:', response.code, response.status);\r",
+							"            return null;\r",
+							"        }\r",
+							"    } catch (error) {\r",
+							"        console.log('Error:', error);\r",
+							"        return null;\r",
+							"    }\r",
+							"};\r",
+							"\r",
+							"// Ejecutar y setear el token\r",
+							"getToken().then(token => {\r",
+							"    if (token) {\r",
+							"        pm.request.headers.upsert({\r",
+							"            key: 'Authorization',\r",
+							"            value: `Bearer ${token}`\r",
+							"        });\r",
+							"        console.log('Token set successfully');\r",
+							"    } else {\r",
+							"        console.log('Failed to get token');\r",
+							"    }\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/pedidos/history",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"pedidos",
+						"history"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

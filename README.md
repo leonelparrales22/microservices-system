@@ -2,6 +2,22 @@
 
 Este sistema implementa un ecosistema de microservicios para gestión de pedidos con autenticación JWT, validación distribuida y certificación de transacciones. Incluye un validador que distribuye solicitudes a múltiples microservicios de pedidos, un autorizador para manejo de usuarios y tokens, y un certificador para generar certificados de transacciones.
 
+## Estructura del Proyecto
+
+```text
+microservices-system/
+├── docker-compose.yml          # Orquestación de servicios
+├── nginx.conf                  # Configuración del API Gateway
+├── README.md                   # Documentación del proyecto
+├── postman/                    # Colecciones de Postman exportadas
+│   └── collections.json        # Ejemplos de requests
+├── autorizador/                # Servicio de autenticación JWT
+├── certificador/               # Servicio de certificación
+├── pedidos/                    # Microservicios de pedidos (3 instancias)
+├── validador/                  # Validador de consenso
+└── rabbitmq/                   # Configuración de RabbitMQ
+```
+
 ## Arquitectura
 
 - **Validador**: Recibe solicitudes HTTP y las distribuye a los microservicios de pedidos para validación de consenso.
