@@ -354,8 +354,12 @@ if __name__ == "__main__":
             try:
                 response = requests.get(f"http://pedidos{i}:{5000+i}/orders")
                 if response.status_code == 200:
-                    instance_orders = response.json().get('orders', [])
-                    user_orders = [o for o in instance_orders if o['order_id'].startswith(f"{user_data['username']}-")]
+                    instance_orders = response.json().get("orders", [])
+                    user_orders = [
+                        o
+                        for o in instance_orders
+                        if o["order_id"].startswith(f"{user_data['username']}-")
+                    ]
                     all_orders.extend(user_orders)
             except:
                 pass  # Si una instancia no responde, continuar con las demás
@@ -364,8 +368,8 @@ if __name__ == "__main__":
         seen = set()
         unique_orders = []
         for order in all_orders:
-            if order['order_id'] not in seen:
-                seen.add(order['order_id'])
+            if order["order_id"] not in seen:
+                seen.add(order["order_id"])
                 unique_orders.append(order)
 
         # Solicitar certificado
@@ -373,9 +377,7 @@ if __name__ == "__main__":
             "http://certificador:5006/certificate",
             json={"user": user_data["username"], "action": "history"},
         )
-        certificate = (
-            cert_response.json() if cert_response.status_code == 200 else None
-        )
+        certificate = cert_response.json() if cert_response.status_code == 200 else None
 
         return jsonify({"orders": unique_orders, "certificate": certificate}), 200
 
