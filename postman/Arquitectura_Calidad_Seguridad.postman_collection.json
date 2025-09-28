@@ -44,7 +44,7 @@
 					"script": {
 						"exec": [
 							"// Pre-request Script\r",
-							"const loginUrl = 'http://localhost:8080/auth/login'; // Ajusta esta URL según tu endpoint de login\r",
+							"const loginUrl = 'http://localhost:8080/auth/login';\r",
 							"const credentials = {\r",
 							"    \"username\": \"leonelparrales22\",\r",
 							"    \"password\": \"admin\"\r",
@@ -161,7 +161,7 @@
 					"script": {
 						"exec": [
 							"// Pre-request Script\r",
-							"const loginUrl = 'http://localhost:8080/auth/login'; // Ajusta esta URL según tu endpoint de login\r",
+							"const loginUrl = 'http://localhost:8080/auth/login';\r",
 							"const credentials = {\r",
 							"    \"username\": \"leonelparrales22\",\r",
 							"    \"password\": \"admin\"\r",
