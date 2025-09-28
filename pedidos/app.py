@@ -2,8 +2,9 @@ import os
 import json
 import pika
 import time
-from flask import Flask
+from flask import Flask, request, jsonify
 import random
+import requests
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -272,6 +273,112 @@ if __name__ == "__main__":
                 for order in orders
             ]
             return {"orders": orders_list}
+        finally:
+            db.close()
+
+    @app.route("/create_order", methods=["POST"])
+    def create_order():
+        token = request.headers.get("Authorization")
+        if not token:
+            return jsonify({"error": "Token missing"}), 401
+
+        # Validar JWT con autorizador
+        try:
+            response = requests.post(
+                "http://autorizador:5005/validate", headers={"Authorization": token}
+            )
+            if response.status_code != 200:
+                return jsonify({"error": "Invalid token"}), 401
+            user_data = response.json()
+        except:
+            return jsonify({"error": "Authorization service unavailable"}), 500
+
+        data = request.get_json()
+        product_id = data.get("product_id")
+        quantity = data.get("quantity", 50)
+
+        # Crear pedido en BD
+        db = SessionLocal()
+        try:
+            new_order = Order(
+                order_id=f"{user_data['username']}-{int(time.time())}",
+                product_id=product_id,
+                quantity_ordered=quantity,
+                status="confirmed",
+            )
+            db.add(new_order)
+            db.commit()
+
+            # Solicitar certificado
+            cert_response = requests.post(
+                "http://certificador:5006/certificate",
+                json={"order_id": new_order.order_id, "user": user_data["username"]},
+            )
+            certificate = (
+                cert_response.json() if cert_response.status_code == 200 else None
+            )
+
+            return (
+                jsonify(
+                    {
+                        "message": "Order created",
+                        "order_id": new_order.order_id,
+                        "certificate": certificate,
+                    }
+                ),
+                201,
+            )
+        finally:
+            db.close()
+
+    @app.route("/history", methods=["GET"])
+    def history():
+        token = request.headers.get("Authorization")
+        if not token:
+            return jsonify({"error": "Token missing"}), 401
+
+        # Validar JWT con autorizador
+        try:
+            response = requests.post(
+                "http://autorizador:5005/validate", headers={"Authorization": token}
+            )
+            if response.status_code != 200:
+                return jsonify({"error": "Invalid token"}), 401
+            user_data = response.json()
+        except:
+            return jsonify({"error": "Authorization service unavailable"}), 500
+
+        # Consultar historial
+        db = SessionLocal()
+        try:
+            orders = (
+                db.query(Order)
+                .filter(Order.order_id.like(f"{user_data['username']}-%"))
+                .all()
+            )
+            orders_list = [
+                {
+                    "order_id": order.order_id,
+                    "product_id": order.product_id,
+                    "quantity_ordered": order.quantity_ordered,
+                    "status": order.status,
+                    "timestamp": (
+                        order.timestamp.isoformat() if order.timestamp else None
+                    ),
+                }
+                for order in orders
+            ]
+
+            # Solicitar certificado
+            cert_response = requests.post(
+                "http://certificador:5006/certificate",
+                json={"user": user_data["username"], "action": "history"},
+            )
+            certificate = (
+                cert_response.json() if cert_response.status_code == 200 else None
+            )
+
+            return jsonify({"orders": orders_list, "certificate": certificate}), 200
         finally:
             db.close()
 
