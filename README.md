@@ -51,8 +51,20 @@ microservices-system/
 ```bash
 curl -X POST http://localhost:8080/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username": "testuser", "password": "testpass"}'
+  -d '{
+    "username": "testuser",
+    "password": "testpass",
+    "org": "orgA",
+    "roles": ["client"]
+  }'
 ```
+
+**Campos del payload:**
+
+- `username` (requerido): Nombre de usuario único
+- `password` (requerido): Contraseña del usuario
+- `org` (opcional): Organización del usuario (por defecto: "orgA")
+- `roles` (opcional): Lista de roles (por defecto: ["client"])
 
 ### 2. Login para Obtener JWT
 
