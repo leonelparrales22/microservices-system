@@ -348,39 +348,36 @@ if __name__ == "__main__":
         except:
             return jsonify({"error": "Authorization service unavailable"}), 500
 
-        # Consultar historial
-        db = SessionLocal()
-        try:
-            orders = (
-                db.query(Order)
-                .filter(Order.order_id.like(f"{user_data['username']}-%"))
-                .all()
-            )
-            orders_list = [
-                {
-                    "order_id": order.order_id,
-                    "product_id": order.product_id,
-                    "quantity_ordered": order.quantity_ordered,
-                    "status": order.status,
-                    "timestamp": (
-                        order.timestamp.isoformat() if order.timestamp else None
-                    ),
-                }
-                for order in orders
-            ]
+        # Consultar historial en todas las instancias
+        all_orders = []
+        for i in range(1, 4):
+            try:
+                response = requests.get(f"http://pedidos{i}:{5000+i}/orders")
+                if response.status_code == 200:
+                    instance_orders = response.json().get('orders', [])
+                    user_orders = [o for o in instance_orders if o['order_id'].startswith(f"{user_data['username']}-")]
+                    all_orders.extend(user_orders)
+            except:
+                pass  # Si una instancia no responde, continuar con las demás
 
-            # Solicitar certificado
-            cert_response = requests.post(
-                "http://certificador:5006/certificate",
-                json={"user": user_data["username"], "action": "history"},
-            )
-            certificate = (
-                cert_response.json() if cert_response.status_code == 200 else None
-            )
+        # Remover duplicados si los hay (por order_id)
+        seen = set()
+        unique_orders = []
+        for order in all_orders:
+            if order['order_id'] not in seen:
+                seen.add(order['order_id'])
+                unique_orders.append(order)
 
-            return jsonify({"orders": orders_list, "certificate": certificate}), 200
-        finally:
-            db.close()
+        # Solicitar certificado
+        cert_response = requests.post(
+            "http://certificador:5006/certificate",
+            json={"user": user_data["username"], "action": "history"},
+        )
+        certificate = (
+            cert_response.json() if cert_response.status_code == 200 else None
+        )
+
+        return jsonify({"orders": unique_orders, "certificate": certificate}), 200
 
     port = 5000 + int(instance_number)
     app.run(host="0.0.0.0", port=port, debug=False)
